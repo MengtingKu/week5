@@ -1,6 +1,5 @@
 const base_url = 'https://vue3-course-api.hexschool.io/v2';
 const api_path = `qwe1234`;
-// aa1234@gmail.com
 import pagination from './pagination.js';
 VeeValidate.defineRule('email', VeeValidateRules['email']);
 VeeValidate.defineRule('required', VeeValidateRules['required']);
@@ -48,6 +47,7 @@ const app = Vue.createApp({
             isLoading: true,
             products: [],
             productId: '',
+            page: {},
             cart: {},
             carts: [],
             hasItem: true,
@@ -68,9 +68,11 @@ const app = Vue.createApp({
             let comma = /\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g;
             return x?.toString()?.replace(comma, ",");
         },
-        getProducts() {
-            axios.get(`${base_url}/api/${api_path}/products`)
+        getProducts(page = 1) {
+            axios.get(`${base_url}/api/${api_path}/products?page=${page}`)
                 .then(res => {
+                    console.log(res.data);
+                    this.page = res.data.pagination;
                     this.products = res.data.products;
                     this.isLoading = false;
                 })
