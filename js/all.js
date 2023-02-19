@@ -1,7 +1,7 @@
 const base_url = 'https://vue3-course-api.hexschool.io/v2';
 const api_path = `qwe1234`;
 // aa1234@gmail.com
-console.log(VeeValidate);
+import pagination from './pagination.js';
 VeeValidate.defineRule('email', VeeValidateRules['email']);
 VeeValidate.defineRule('required', VeeValidateRules['required']);
 VeeValidateI18n.loadLocaleFromURL('/zh_TW.json');
@@ -11,7 +11,7 @@ VeeValidate.configure({
 });
 
 const productModal = {
-    props: ['id', 'addToCart'],
+    props: ['id', 'addToCart', 'thousands'],
     data() {
         return {
             tempProduct: {},
@@ -45,6 +45,7 @@ const productModal = {
 const app = Vue.createApp({
     data() {
         return {
+            isLoading: true,
             products: [],
             productId: '',
             cart: {},
@@ -54,20 +55,24 @@ const app = Vue.createApp({
                 email: '',
                 name: '',
                 address: '',
-                phone: '',
-            }
+                tel: '',
+            },
+            message: ''
         }
+    },
+    components: {
+        pagination,
     },
     methods: {
         thousands(x) {
-            let parts = x.toString().split(".");
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            return parts.join(".");
+            let comma = /\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g;
+            return x?.toString()?.replace(comma, ",");
         },
         getProducts() {
-            axios.get(`${base_url}/api/${api_path}/products/all`)
+            axios.get(`${base_url}/api/${api_path}/products`)
                 .then(res => {
                     this.products = res.data.products;
+                    this.isLoading = false;
                 })
                 .catch(err => {
                     console.log(err);
@@ -93,10 +98,11 @@ const app = Vue.createApp({
         getCartList() {
             axios.get(`${base_url}/api/${api_path}/cart`)
                 .then(res => {
+                    this.isLoading = true;
                     console.log('購物車列表 item::', res.data.data);
                     this.cart = res.data.data;
                     this.carts = this.cart.carts;
-                    console.log(this.carts.length);
+                    this.isLoading = false;
                     if (this.cart.carts.length) {
                         this.hasItem = false;
                     } else {
@@ -133,10 +139,8 @@ const app = Vue.createApp({
                 })
         },
         delAllItem() {
-            // this.hasItem = true;
             axios.delete(`${base_url}/api/${api_path}/carts`)
                 .then(res => {
-                    // console.log(res);
                     alert(`已經把所有商品移除囉！ ʕ·͡ˑ·ཻʔ `);
                     this.getCartList()
                 })
@@ -146,13 +150,35 @@ const app = Vue.createApp({
                 })
         },
         onSubmit(value) {
-            console.log(value);
-            this.user = {}
+            const data = {
+                user: {
+                    name: this.user.name,
+                    email: this.user.email,
+                    tel: this.user.tel,
+                    address: this.user.address
+                },
+                message: this.message
+            }
+            if (this.carts.length === 0) {
+                return alert(`購物車內無資料，請選擇一樣商品吧~`)
+            }
+            axios.post(`${base_url}/api/${api_path}/order`, { data })
+                .then(res => {
+                    console.log(res);
+                    alert(res.data.message)
+                })
+                .catch(err => {
+                    console.log(err);
+                    alert(err.data.message)
+                });
+            this.user = {};
+            this.message = '';
+
         },
         isPhone(value) {
             const phoneNumber = /^(09)[0-9]{8}$/
             return phoneNumber.test(value) ? true : '需要正確的電話號碼'
-        }
+        },
     },
     components: {
         productModal,

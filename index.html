@@ -14,7 +14,11 @@
 
 <body>
     <div id="app">
-        <div class="container">
+        <div class="loading" v-if="isLoading">
+            <div class="bounceBall me-2"></div>
+            <div class="text h5">NOW LOADING...ʕ̯•͡ˑ͓•̯᷅ʔ</div>
+        </div>
+        <div class="container" v-else>
             <div class="mt-4">
                 <!-- 產品列表 -->
                 <table class="table align-middle">
@@ -67,10 +71,12 @@
                         </tr>
                     </tbody>
                 </table>
+                <!-- <pagination :pages="page" :get-products="getProducts"></pagination> -->
                 <!-- 產品 BSModal -->
-                <product-modal :id="productId" :add-to-cart="addToCart" ref="productModal"></product-modal>
+                <product-modal :id="productId" :add-to-cart="addToCart" :thousands="thousands" ref="productModal"></product-modal>
                 <!-- 購物車列表 -->
                 <div class="text-end">
+                    <img class="img-fluid" src="./loading.gif" alt="loading-gif" width="60" v-if="isLoading">
                     <button class="btn btn-outline-danger" type="button" @click="delAllItem" :disabled="hasItem"><i
                             class="fa-solid fa-trash-can"></i>
                         清空購物車</button>
@@ -110,7 +116,7 @@
                                 </td>
                                 <td class="text-end">
                                     <small class="text-success">折扣價：</small>
-                                    {{ item.total }}
+                                    {{ thousands(item.total) }}
                                 </td>
                             </tr>
                         </template>
@@ -123,11 +129,11 @@
                     <tfoot>
                         <tr>
                             <td colspan="3" class="text-end">總計</td>
-                            <td class="text-end">{{ cart.total }}</td>
+                            <td class="text-end">{{ thousands(cart.total) }}</td>
                         </tr>
                         <tr>
                             <td colspan="3" class="text-end text-success">折扣價</td>
-                            <td class="text-end text-success">{{ cart.final_total }}</td>
+                            <td class="text-end text-success">{{ thousands(cart.final_total) }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -153,8 +159,8 @@
 
                     <div class="mb-3">
                         <label for="tel" class="form-label">收件人電話</label>
-                        <v-field id="tel" name="電話" type="text" class="form-control" v-model="user.phone"
-                            :rules="isPhone" :class="{ 'is-invalid': errors['電話'] }" placeholder="請輸入電話"></v-field>
+                        <v-field id="tel" name="電話" type="text" class="form-control" v-model="user.tel" :rules="isPhone"
+                            :class="{ 'is-invalid': errors['電話'] }" placeholder="請輸入電話"></v-field>
                         <error-message name="電話" class="invalid-feedback"></error-message>
                     </div>
 
@@ -168,7 +174,7 @@
 
                     <div class="mb-3">
                         <label for="message" class="form-label">留言</label>
-                        <textarea id="message" class="form-control" cols="30" rows="10"></textarea>
+                        <textarea id="message" class="form-control" cols="30" rows="10" v-model="message"></textarea>
                     </div>
                     <div class="text-end">
                         <button type="submit" class="btn btn-danger">送出訂單 <i
@@ -200,10 +206,10 @@
                                     <span class="badge bg-primary rounded-pill mb-3">{{ tempProduct.title }}</span>
                                     <p>商品描述：{{ tempProduct.description }}</p>
                                     <p>商品內容：{{ tempProduct.content }}</p>
-                                    <p v-if="tempProduct.price === tempProduct.origin_price" class="h5">{{ tempProduct.price }} 元</p>
+                                    <p v-if="tempProduct.price === tempProduct.origin_price" class="h5">{{ thousands(tempProduct.price) }} 元</p>
                                     <div v-else>
-                                        <p class="h6 text-decoration-line-through">原價 {{ tempProduct.origin_price }} 元</p>
-                                        <p class="h5">現在只要 {{ tempProduct.price }} 元</p>
+                                        <p class="h6 text-decoration-line-through">原價 {{ thousands(tempProduct.origin_price) }} 元</p>
+                                        <p class="h5">現在只要 {{ thousands(tempProduct.price) }} 元</p>
                                     </div>
                                 </div>
                                 <div class="input-group">
