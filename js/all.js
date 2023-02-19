@@ -8,8 +8,9 @@ VeeValidate.configure({
     generateMessage: VeeValidateI18n.localize('zh_TW'),
     validateOnInput: true,
 });
+// 區域元件
 const productModal = {
-    props: ['id', 'addToCart', 'thousands'],
+    props: ['id', 'addToCart', 'thousands', 'openModal'],
     data() {
         return {
             tempProduct: {},
@@ -19,15 +20,17 @@ const productModal = {
     },
     watch: {
         id() {
-            axios.get(`${base_url}/api/${api_path}/product/${this.id}`)
-                .then(res => {
-                    this.tempProduct = res.data.product;
-                    // console.log("特定產品列表 tempProduct::", res.data.product);
-                    this.bsModal.show()
-                })
-                .catch(err => {
-                    alert(err.data.message)
-                })
+            if (this.id) {
+                axios.get(`${base_url}/api/${api_path}/product/${this.id}`)
+                    .then(res => {
+                        this.tempProduct = res.data.product;
+                        this.bsModal.show();
+                        this.qty = 1
+                    })
+                    .catch(err => {
+                        alert(err.data.message)
+                    })
+            }
         }
     },
     methods: {
@@ -38,8 +41,13 @@ const productModal = {
     template: '#userProductModal',
     mounted() {
         this.bsModal = new bootstrap.Modal(this.$refs.modal);
+        // 監聽 DOM ，當 modal 關閉要做的事情
+        this.$refs.modal.addEventListener('hidden.bs.modal', event => {
+            this.openModal('')
+        })
     },
 };
+// 根元件
 const app = Vue.createApp({
     data() {
         return {
@@ -56,11 +64,16 @@ const app = Vue.createApp({
                 address: '',
                 tel: '',
             },
-            message: ''
+            message: '',
+            loadingItem: ''
         }
     },
     components: {
-        pagination,
+        productModal,
+        VForm: VeeValidate.Form,
+        VField: VeeValidate.Field,
+        ErrorMessage: VeeValidate.ErrorMessage,
+        pagination
     },
     methods: {
         thousands(x) {
@@ -68,11 +81,8 @@ const app = Vue.createApp({
             return x?.toString()?.replace(comma, ",");
         },
         getProducts(page = 1) {
-            if (page === this.page.current_page) return;
-            if (page <= 0 || page > this.page.total_pages) return;
-            axios.get(`${base_url}/api/${api_path}/products?${page}`)
+            axios.get(`${base_url}/api/${api_path}/products?page=${page}`)
                 .then(res => {
-                    console.log("確認分頁內容專用::",res.data);
                     this.page = res.data.pagination;
                     this.products = res.data.products;
                     this.isLoading = false;
@@ -89,10 +99,13 @@ const app = Vue.createApp({
                 product_id,
                 qty
             };
+            this.loadingItem = product_id;
             axios.post(`${base_url}/api/${api_path}/cart`, { data })
                 .then(res => {
                     this.$refs.productModal.hide();
-                    this.getCartList()
+                    this.loadingItem = "";
+                    this.getCartList();
+                    console.log("addToCart", res.data);
                 })
                 .catch(err => {
                     console.log(err);
@@ -120,20 +133,24 @@ const app = Vue.createApp({
                 product_id: item.product_id,
                 qty: item.qty
             };
-            axios.put(`${base_url}/api/${api_path}/cart/${item.id}`, { data })
-                .then(res => {
-                    alert(`${item.product.title}${res.data.message}`);
-                    this.getCartList()
-                })
-                .catch(err => {
-                    console.log(err);
-                })
+            this.loadingItem = item.id,
+                axios.put(`${base_url}/api/${api_path}/cart/${item.id}`, { data })
+                    .then(res => {
+                        alert(`${item.product.title}${res.data.message}`);
+                        this.loadingItem = "",
+                            this.getCartList()
+                    })
+                    .catch(err => {
+                        console.log(err);
+                    })
         },
         delItem(item) {
+            this.loadingItem = item.id;
             axios.delete(`${base_url}/api/${api_path}/cart/${item.id}`)
                 .then(res => {
                     alert(`${item.product.title}${res.data.message}`);
-                    this.getCartList()
+                    this.loadingItem = "";
+                    this.getCartList();
                 })
                 .catch(err => {
                     console.log(err);
@@ -165,6 +182,8 @@ const app = Vue.createApp({
             }
             axios.post(`${base_url}/api/${api_path}/order`, { data })
                 .then(res => {
+                    this.carts = [];
+                    this.getCartList();
                     alert(res.data.message)
                 })
                 .catch(err => {
@@ -173,18 +192,11 @@ const app = Vue.createApp({
                 });
             this.user = {};
             this.message = '';
-
         },
         isPhone(value) {
             const phoneNumber = /^(09)[0-9]{8}$/
             return phoneNumber.test(value) ? true : '需要正確的電話號碼'
         },
-    },
-    components: {
-        productModal,
-        VForm: VeeValidate.Form,
-        VField: VeeValidate.Field,
-        ErrorMessage: VeeValidate.ErrorMessage,
     },
     mounted() {
         this.getProducts();

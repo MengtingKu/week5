@@ -62,7 +62,7 @@
                                         查看更多
                                     </button>
                                     <button type="button" class="btn btn-outline-danger"
-                                        @click="addToCart(product.id, 1)">
+                                        @click="addToCart(product.id, 1)" :disabled="product.id === loadingItem">
                                         <i class="fa-solid fa-cart-shopping"></i>
                                         加到購物車
                                     </button>
@@ -73,10 +73,12 @@
                 </table>
                 <pagination :pages="page" :get-products="getProducts"></pagination>
                 <!-- 產品 BSModal -->
-                <product-modal :id="productId" :add-to-cart="addToCart" :thousands="thousands" ref="productModal"></product-modal>
+                <product-modal :id="productId" :add-to-cart="addToCart" :thousands="thousands" :open-modal="openModal"
+                    ref="productModal"></product-modal>
                 <!-- 購物車列表 -->
                 <div class="text-end">
-                    <img class="img-fluid" src="./loading.gif" alt="loading-gif" width="60" v-if="isLoading">
+                    <!-- 測試區塊 loading-img -->
+                    <!-- <img class="img-fluid" src="./loading.gif" alt="loading-gif" width="60" v-if="isLoading"> -->
                     <button class="btn btn-outline-danger" type="button" @click="delAllItem" :disabled="hasItem"><i
                             class="fa-solid fa-trash-can"></i>
                         清空購物車</button>
@@ -95,7 +97,7 @@
                             <tr v-for="item in cart.carts" :key="item.id">
                                 <td>
                                     <button type="button" class="btn btn-outline-danger btn-sm" aria-label="btn"
-                                        @click="delItem(item)">
+                                        @click="delItem(item)" :disabled="item.id===loadingItem">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </td>
@@ -108,7 +110,7 @@
                                 <td>
                                     <div class="input-group input-group-sm">
                                         <select name="" id="" class="form-select" v-model="item.qty" aria-label="qty"
-                                            @change="cartQty(item)">
+                                            @change="cartQty(item)" :disabled="item.id===loadingItem">
                                             <option :value="i" v-for="i in 20" :key="i">{{ i }}</option>
                                         </select>
                                         <span class="ms-3">{{ item.product.unit }}</span>
