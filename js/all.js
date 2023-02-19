@@ -8,7 +8,6 @@ VeeValidate.configure({
     generateMessage: VeeValidateI18n.localize('zh_TW'),
     validateOnInput: true,
 });
-
 const productModal = {
     props: ['id', 'addToCart', 'thousands'],
     data() {
@@ -69,9 +68,11 @@ const app = Vue.createApp({
             return x?.toString()?.replace(comma, ",");
         },
         getProducts(page = 1) {
-            axios.get(`${base_url}/api/${api_path}/products?page=${page}`)
+            if (page === this.page.current_page) return;
+            if (page <= 0 || page > this.page.total_pages) return;
+            axios.get(`${base_url}/api/${api_path}/products?${page}`)
                 .then(res => {
-                    console.log(res.data);
+                    console.log("確認分頁內容專用::",res.data);
                     this.page = res.data.pagination;
                     this.products = res.data.products;
                     this.isLoading = false;
@@ -101,7 +102,6 @@ const app = Vue.createApp({
             axios.get(`${base_url}/api/${api_path}/cart`)
                 .then(res => {
                     this.isLoading = true;
-                    console.log('購物車列表 item::', res.data.data);
                     this.cart = res.data.data;
                     this.carts = this.cart.carts;
                     this.isLoading = false;
@@ -122,7 +122,6 @@ const app = Vue.createApp({
             };
             axios.put(`${base_url}/api/${api_path}/cart/${item.id}`, { data })
                 .then(res => {
-                    console.log('cartQty列表 item::', res.data);
                     alert(`${item.product.title}${res.data.message}`);
                     this.getCartList()
                 })
@@ -166,7 +165,6 @@ const app = Vue.createApp({
             }
             axios.post(`${base_url}/api/${api_path}/order`, { data })
                 .then(res => {
-                    console.log(res);
                     alert(res.data.message)
                 })
                 .catch(err => {
